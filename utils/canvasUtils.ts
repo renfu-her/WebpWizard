@@ -8,13 +8,14 @@ export const createImage = (url: string): Promise<HTMLImageElement> =>
   });
 
 /**
- * Logic to resize an image (as Data URL) to specific dimensions
+ * Logic to resize an image (as Data URL) to specific dimensions.
+ * The background color logic is handled upstream by the cropper.
+ * This function preserves whatever background (transparent or colored) is in the source image.
  */
 export async function resizeImage(
   base64Str: string,
   width: number,
-  height: number,
-  keepTransparency: boolean
+  height: number
 ): Promise<string> {
   const img = await createImage(base64Str);
   const canvas = document.createElement('canvas');
@@ -23,11 +24,6 @@ export async function resizeImage(
   const ctx = canvas.getContext('2d');
 
   if (!ctx) return '';
-
-  if (!keepTransparency) {
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-  }
 
   // High quality scaling
   ctx.imageSmoothingEnabled = true;

@@ -58,9 +58,8 @@ const App: React.FC = () => {
             finalWidth = finalHeight * aspectRatio;
          }
 
-         // We pass true for transparency here because the base crop already handled the background color logic
-         // We just want to preserve what the cropper gave us during resize
-         baseImage = await resizeImage(croppedBase64, finalWidth, finalHeight, true);
+         // Use the simpler resizeImage which just resizes what it gets
+         baseImage = await resizeImage(croppedBase64, finalWidth, finalHeight);
          baseWidth = finalWidth;
          baseHeight = finalHeight;
       }
@@ -68,13 +67,12 @@ const App: React.FC = () => {
       // 2. Generate Small (50%)
       const smallWidth = Math.max(1, Math.floor(baseWidth * 0.5));
       const smallHeight = Math.max(1, Math.floor(baseHeight * 0.5));
-      // Always keep transparency during resize, as the "Original" already has the correct background baked in if needed
-      const smallImage = await resizeImage(baseImage, smallWidth, smallHeight, true);
+      const smallImage = await resizeImage(baseImage, smallWidth, smallHeight);
 
       // 3. Generate Large (200%)
       const largeWidth = Math.floor(baseWidth * 2);
       const largeHeight = Math.floor(baseHeight * 2);
-      const largeImage = await resizeImage(baseImage, largeWidth, largeHeight, true);
+      const largeImage = await resizeImage(baseImage, largeWidth, largeHeight);
 
       setResults({
         original: baseImage,

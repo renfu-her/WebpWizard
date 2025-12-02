@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Cropper, ReactCropperElement } from 'react-cropper';
 import { AspectRatioOption } from '../types';
-import { RotateCw, ZoomIn, Grid, CheckCircle2, RotateCcw } from 'lucide-react';
+import { RotateCw, ZoomIn, Grid, RotateCcw, Palette, Ban } from 'lucide-react';
 
 interface ImageEditorProps {
   imageSrc: string;
@@ -30,7 +30,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   
   // Settings
   const [selectedAspectLabel, setSelectedAspectLabel] = useState<string>('Free');
-  const [keepTransparency, setKeepTransparency] = useState(true);
+  const [bgColor, setBgColor] = useState<string>('transparent');
   const [targetWidth, setTargetWidth] = useState<string>('');
   const [targetHeight, setTargetHeight] = useState<string>('');
   
@@ -74,6 +74,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
          setZoomLevel(1);
          cropper.setAspectRatio(NaN);
          setSelectedAspectLabel('Free');
+         setBgColor('transparent');
      }
   };
 
@@ -85,9 +86,9 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
       // Delay slightly to let UI update
       setTimeout(() => {
         // Get the cropped canvas
-        // If transparency is OFF, we need to fill the background
+        // fillColor sets the background color for transparent areas
         const canvas = cropper.getCroppedCanvas({
-          fillColor: keepTransparency ? 'transparent' : '#ffffff',
+          fillColor: bgColor,
           imageSmoothingEnabled: true,
           imageSmoothingQuality: 'high',
         });
@@ -192,55 +193,81 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
           </div>
         </div>
 
-        {/* Output Config */}
-        <div className="bg-gray-800 p-5 rounded-2xl border border-gray-700 space-y-4">
-           <label className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 block">
-             Output Settings
-          </label>
+        {/* Background Color & Output */}
+        <div className="bg-gray-800 p-5 rounded-2xl border border-gray-700 space-y-5">
+           
+           {/* Background Color Picker */}
+           <div>
+             <label className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3 block flex items-center gap-2">
+                <Palette className="w-4 h-4" /> Background
+             </label>
+             <div className="grid grid-cols-4 gap-2">
+                <button
+                  onClick={() => setBgColor('transparent')}
+                  className={`h-10 rounded-lg border flex items-center justify-center transition-all ${
+                    bgColor === 'transparent' ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-gray-600 hover:border-gray-500'
+                  }`}
+                  title="Transparent"
+                >
+                  <div className="w-full h-full rounded-md bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAA3NCSVQICAjb4U/gAAAABlBMVEX///8AAABVwtN+AAAAAnRSTlP/AOW3ME4AAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAcdEVYdFNvZnR3YXJlAADOYmUgT3BlbiBTb3VyY2UgQ0UoeRKKAAAAF0lEQVQY02NgQAX/G8H4//9/EJOQAAQA9RcP8e+2VZAAAAAASUVORK5CYII=')] opacity-50"></div>
+                  <Ban className="w-4 h-4 text-gray-500 absolute" />
+                </button>
+                <button
+                  onClick={() => setBgColor('#ffffff')}
+                  className={`h-10 rounded-lg border bg-white flex items-center justify-center transition-all ${
+                    bgColor === '#ffffff' ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-gray-600'
+                  }`}
+                  title="White"
+                ></button>
+                <button
+                  onClick={() => setBgColor('#000000')}
+                  className={`h-10 rounded-lg border bg-black flex items-center justify-center transition-all ${
+                    bgColor === '#000000' ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-gray-600'
+                  }`}
+                  title="Black"
+                ></button>
+                <div className="relative h-10">
+                   <input 
+                    type="color" 
+                    value={bgColor === 'transparent' ? '#ffffff' : bgColor}
+                    onChange={(e) => setBgColor(e.target.value)}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                   />
+                   <div className={`w-full h-full rounded-lg border flex items-center justify-center transition-all ${
+                      bgColor !== 'transparent' && bgColor !== '#ffffff' && bgColor !== '#000000' ? 'border-indigo-500 ring-2 ring-indigo-500/50' : 'border-gray-600'
+                   }`} style={{ backgroundColor: bgColor === 'transparent' ? 'transparent' : bgColor }}>
+                      <Palette className={`w-4 h-4 ${bgColor === 'transparent' ? 'text-gray-400' : 'text-gray-400 mix-blend-difference'}`} />
+                   </div>
+                </div>
+             </div>
+           </div>
 
           {/* Resize Inputs */}
-          <div className="grid grid-cols-2 gap-3">
-             <div className="space-y-1">
-               <label className="text-xs text-gray-400">Target Width (px)</label>
-               <input 
-                 type="number" 
-                 placeholder="Auto"
-                 value={targetWidth}
-                 onChange={(e) => setTargetWidth(e.target.value)}
-                 className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-               />
-             </div>
-             <div className="space-y-1">
-               <label className="text-xs text-gray-400">Target Height (px)</label>
-               <input 
-                 type="number" 
-                 placeholder="Auto"
-                 value={targetHeight}
-                 onChange={(e) => setTargetHeight(e.target.value)}
-                 className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
-               />
-             </div>
-          </div>
-          <p className="text-[10px] text-gray-500">Force the final output size (optional).</p>
-
-          {/* Transparency Toggle */}
-          <div 
-            onClick={() => setKeepTransparency(!keepTransparency)}
-            className={`flex items-center p-3 rounded-lg cursor-pointer border transition-all ${
-              keepTransparency 
-                ? 'bg-indigo-900/30 border-indigo-500/50' 
-                : 'bg-gray-900 border-gray-700 hover:border-gray-600'
-            }`}
-          >
-            <div className={`w-5 h-5 rounded border flex items-center justify-center mr-3 transition-colors ${
-              keepTransparency ? 'bg-indigo-500 border-indigo-500' : 'border-gray-500'
-            }`}>
-              {keepTransparency && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+          <div>
+            <label className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 block">
+               Output Size
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+               <div className="space-y-1">
+                 <input 
+                   type="number" 
+                   placeholder="Width (px)"
+                   value={targetWidth}
+                   onChange={(e) => setTargetWidth(e.target.value)}
+                   className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                 />
+               </div>
+               <div className="space-y-1">
+                 <input 
+                   type="number" 
+                   placeholder="Height (px)"
+                   value={targetHeight}
+                   onChange={(e) => setTargetHeight(e.target.value)}
+                   className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                 />
+               </div>
             </div>
-            <div>
-              <span className="text-sm font-medium text-gray-200 block">Preserve Transparency</span>
-              <span className="text-xs text-gray-500 block">If off, background becomes white.</span>
-            </div>
+            <p className="text-[10px] text-gray-500 mt-1">Leave empty to use original crop size.</p>
           </div>
         </div>
 
