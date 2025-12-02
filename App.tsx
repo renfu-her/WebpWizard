@@ -104,14 +104,18 @@ const App: React.FC = () => {
       {/* Header */}
       <header className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <button 
+            onClick={handleReset} 
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity focus:outline-none"
+            title="Go to Home"
+          >
             <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
               <Wand2 className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-white">
               WebP<span className="text-indigo-400">Wizard</span>
             </h1>
-          </div>
+          </button>
           <div className="text-sm text-gray-500 hidden sm:block">
             High Performance Image Processor
           </div>
