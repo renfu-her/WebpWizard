@@ -1,0 +1,5 @@
+{
+  "name": "WebP Wizard",
+  "description": "A powerful image converter tool to crop, resize, and convert images to WebP format with transparency controls and multi-size generation.",
+  "requestFramePermissions": []
+}
