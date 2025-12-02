@@ -6,45 +6,10 @@
     <title>WebP Wizard - Crop, Resize & Convert</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
-    <style>
-      /* Custom scrollbar for a cleaner look */
-      ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-      }
-      ::-webkit-scrollbar-track {
-        background: #1f2937;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #4b5563;
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #6b7280;
-      }
-      /* Override CropperJS default background to match dark theme better */
-      .cropper-bg {
-        background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAA3NCSVQICAjb4U/gAAAABlBMVEX///8AAABVwtN+AAAAAnRSTlP/AOW3ME4AAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAcdEVYdFNvZnR3YXJlAADOYmUgT3BlbiBTb3VyY2UgQ0UoeRKKAAAAF0lEQVQY02NgQAX/G8H4//9/EJOQAAQA9RcP8e+2VZAAAAAASUVORK5CYII=');
-      }
-      .cropper-modal {
-        background-color: #000;
-        opacity: 0.7;
-      }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://aistudiocdn.com/react@^19.2.0",
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
-    "react-cropper": "https://esm.sh/react-cropper@2.3.3?external=react,react-dom",
-    "cropperjs": "https://esm.sh/cropperjs@1.6.1"
-  }
-}
-</script>
-</head>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
   <body class="bg-gray-900 text-white antialiased selection:bg-indigo-500 selection:text-white">
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

@@ -1,0 +1,24 @@
+/* Custom scrollbar for a cleaner look */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+/* Override CropperJS default background to match dark theme better */
+.cropper-bg {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQAQMAAAAlPW0iAAAAA3NCSVQICAjb4U/gAAAABlBMVEX///8AAABVwtN+AAAAAnRSTlP/AOW3ME4AAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAcdEVYdFNvZnR3YXJlAADOYmUgT3BlbiBTb3VyY2UgQ0UoeRKKAAAAF0lEQVQY02NgQAX/G8H4//9/EJOQAAQA9RcP8e+2VZAAAAAASUVORK5CYII=');
+}
+.cropper-modal {
+  background-color: #000;
+  opacity: 0.7;
+}
+
