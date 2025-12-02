@@ -1,16 +1,13 @@
-import React, { useState, useCallback } from 'react';
-import Cropper from 'react-easy-crop';
-import { PixelCrop, AspectRatioOption } from '../types';
-import { RotateCw, ZoomIn, Lock, Unlock, Grid, CheckCircle2 } from 'lucide-react';
-import { Point } from '../types';
+import React, { useState, useRef } from 'react';
+import { Cropper, ReactCropperElement } from 'react-cropper';
+import { AspectRatioOption } from '../types';
+import { RotateCw, ZoomIn, Grid, CheckCircle2, RotateCcw } from 'lucide-react';
 
 interface ImageEditorProps {
   imageSrc: string;
   onProcessingStart: () => void;
   onCropComplete: (
-    pixelCrop: PixelCrop, 
-    rotation: number, 
-    keepTransparency: boolean,
+    croppedBase64: string,
     forcedSize: { width: number | ''; height: number | '' }
   ) => void;
 }
@@ -29,81 +26,102 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
   onProcessingStart,
   onCropComplete,
 }) => {
-  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
-  const [aspect, setAspect] = useState<number | undefined>(undefined);
-  const [selectedAspectLabel, setSelectedAspectLabel] = useState<string>('Free');
-  const [completedCrop, setCompletedCrop] = useState<PixelCrop | null>(null);
+  const cropperRef = useRef<ReactCropperElement>(null);
   
   // Settings
+  const [selectedAspectLabel, setSelectedAspectLabel] = useState<string>('Free');
   const [keepTransparency, setKeepTransparency] = useState(true);
   const [targetWidth, setTargetWidth] = useState<string>('');
   const [targetHeight, setTargetHeight] = useState<string>('');
+  
+  // UI State for sliders (just for visual feedback/control)
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [rotation, setRotation] = useState(0);
 
-  const onCropChange = (crop: Point) => {
-    setCrop(crop);
+  const handleAspectChange = (option: AspectRatioOption) => {
+    setSelectedAspectLabel(option.label);
+    const cropper = cropperRef.current?.cropper;
+    if (cropper) {
+      if (option.value === 'free') {
+        cropper.setAspectRatio(NaN);
+      } else {
+        cropper.setAspectRatio(option.value as number);
+      }
+    }
   };
 
-  const onZoomChange = (zoom: number) => {
-    setZoom(zoom);
+  const handleRotate = (val: number) => {
+    const cropper = cropperRef.current?.cropper;
+    if (cropper) {
+      cropper.rotateTo(val);
+      setRotation(val);
+    }
   };
 
-  const onCropCompleteHandler = useCallback((_: PixelCrop, croppedAreaPixels: PixelCrop) => {
-    setCompletedCrop(croppedAreaPixels);
-  }, []);
+  const handleZoom = (val: number) => {
+    const cropper = cropperRef.current?.cropper;
+    if (cropper) {
+      cropper.zoomTo(val);
+      setZoomLevel(val);
+    }
+  };
+  
+  const handleReset = () => {
+     const cropper = cropperRef.current?.cropper;
+     if(cropper) {
+         cropper.reset();
+         setRotation(0);
+         setZoomLevel(1);
+         cropper.setAspectRatio(NaN);
+         setSelectedAspectLabel('Free');
+     }
+  };
 
   const handleGenerate = () => {
-    if (completedCrop) {
+    const cropper = cropperRef.current?.cropper;
+    if (cropper) {
       onProcessingStart();
-      // Add a small delay to allow UI to show loading state
+      
+      // Delay slightly to let UI update
       setTimeout(() => {
-        onCropComplete(
-          completedCrop, 
-          rotation, 
-          keepTransparency, 
-          { 
-             width: targetWidth === '' ? '' : Number(targetWidth), 
-             height: targetHeight === '' ? '' : Number(targetHeight) 
-          }
-        );
+        // Get the cropped canvas
+        // If transparency is OFF, we need to fill the background
+        const canvas = cropper.getCroppedCanvas({
+          fillColor: keepTransparency ? 'transparent' : '#ffffff',
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high',
+        });
+
+        if (canvas) {
+          const base64 = canvas.toDataURL('image/webp', 0.9);
+          onCropComplete(
+            base64,
+            { 
+               width: targetWidth === '' ? '' : Number(targetWidth), 
+               height: targetHeight === '' ? '' : Number(targetHeight) 
+            }
+          );
+        }
       }, 100);
     }
   };
 
-  const handleAspectChange = (option: AspectRatioOption) => {
-    setSelectedAspectLabel(option.label);
-    if (option.value === 'free') {
-      setAspect(undefined);
-    } else {
-      setAspect(option.value as number);
-    }
-  };
-
-  // Helper to sync dimensions if user inputs one, we could calculate the other, 
-  // but for "arbitrary" resize logic requested, we'll let them input whatever or leave blank for auto.
-
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full w-full max-w-6xl mx-auto">
       {/* Cropper Area */}
-      <div className="flex-1 min-h-[500px] bg-gray-900 rounded-2xl overflow-hidden relative shadow-2xl border border-gray-800">
-        <div className="absolute inset-0 bg-black/50 pointer-events-none z-10 flex items-center justify-center">
-            {/* Grid overlay pattern could go here if needed, but react-easy-crop has one */}
-        </div>
+      <div className="flex-1 min-h-[500px] bg-gray-900 rounded-2xl overflow-hidden relative shadow-2xl border border-gray-800 flex flex-col">
         <Cropper
-          image={imageSrc}
-          crop={crop}
-          zoom={zoom}
-          rotation={rotation}
-          aspect={aspect}
-          onCropChange={onCropChange}
-          onCropComplete={onCropCompleteHandler}
-          onZoomChange={onZoomChange}
-          onRotationChange={setRotation}
-          classes={{
-            containerClassName: 'bg-gray-950',
-            cropAreaClassName: 'border-2 border-indigo-500 shadow-[0_0_0_9999px_rgba(0,0,0,0.7)]',
-          }}
+          src={imageSrc}
+          style={{ height: '100%', minHeight: '500px', width: '100%' }}
+          initialAspectRatio={NaN} // Default to Free
+          aspectRatio={NaN}
+          guides={true}
+          viewMode={1} // Restrict crop box to canvas
+          dragMode="move"
+          ref={cropperRef}
+          background={false} // We handle bg in CSS
+          autoCropArea={0.8}
+          className="flex-1"
         />
       </div>
 
@@ -112,8 +130,11 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
         
         {/* Aspect Ratio */}
         <div className="bg-gray-800 p-5 rounded-2xl border border-gray-700">
-          <label className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3 block flex items-center gap-2">
-            <Grid className="w-4 h-4" /> Aspect Ratio
+          <label className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-3 flex items-center justify-between">
+            <span className="flex items-center gap-2"><Grid className="w-4 h-4" /> Mask Shape</span>
+            <button onClick={handleReset} className="text-indigo-400 hover:text-white text-[10px] flex items-center gap-1">
+                <RotateCcw className="w-3 h-3" /> Reset
+            </button>
           </label>
           <div className="grid grid-cols-3 gap-2">
             {aspectRatios.map((ratio) => (
@@ -135,22 +156,21 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
         {/* Transforms */}
         <div className="bg-gray-800 p-5 rounded-2xl border border-gray-700 space-y-4">
           <label className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 block flex items-center gap-2">
-             Adjust
+             Adjust Image
           </label>
           
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-gray-400">
               <span className="flex items-center gap-1"><ZoomIn className="w-3 h-3"/> Zoom</span>
-              <span>{zoom.toFixed(1)}x</span>
+              <span>{zoomLevel.toFixed(1)}x</span>
             </div>
             <input
               type="range"
-              value={zoom}
-              min={1}
+              value={zoomLevel}
+              min={0.1}
               max={3}
               step={0.1}
-              aria-labelledby="Zoom"
-              onChange={(e) => onZoomChange(Number(e.target.value))}
+              onChange={(e) => handleZoom(Number(e.target.value))}
               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
             />
           </div>
@@ -163,11 +183,10 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
             <input
               type="range"
               value={rotation}
-              min={0}
-              max={360}
+              min={-180}
+              max={180}
               step={1}
-              aria-labelledby="Rotation"
-              onChange={(e) => setRotation(Number(e.target.value))}
+              onChange={(e) => handleRotate(Number(e.target.value))}
               className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
             />
           </div>
@@ -185,7 +204,7 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                <label className="text-xs text-gray-400">Target Width (px)</label>
                <input 
                  type="number" 
-                 placeholder={completedCrop ? Math.round(completedCrop.width).toString() : 'Auto'}
+                 placeholder="Auto"
                  value={targetWidth}
                  onChange={(e) => setTargetWidth(e.target.value)}
                  className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
@@ -195,14 +214,14 @@ const ImageEditor: React.FC<ImageEditorProps> = ({
                <label className="text-xs text-gray-400">Target Height (px)</label>
                <input 
                  type="number" 
-                 placeholder={completedCrop ? Math.round(completedCrop.height).toString() : 'Auto'}
+                 placeholder="Auto"
                  value={targetHeight}
                  onChange={(e) => setTargetHeight(e.target.value)}
                  className="w-full bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                />
              </div>
           </div>
-          <p className="text-[10px] text-gray-500">Leave blank to use crop dimensions.</p>
+          <p className="text-[10px] text-gray-500">Force the final output size (optional).</p>
 
           {/* Transparency Toggle */}
           <div 

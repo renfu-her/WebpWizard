@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import ImageUploader from './components/ImageUploader';
 import ImageEditor from './components/ImageEditor';
 import ResultGallery from './components/ResultGallery';
-import getCroppedImg, { resizeImage, createImage } from './utils/canvasUtils';
-import { PixelCrop, GeneratedImages } from './types';
+import { resizeImage, createImage } from './utils/canvasUtils';
+import { GeneratedImages } from './types';
 import { Wand2, Loader2, ImagePlus } from 'lucide-react';
 
 const App: React.FC = () => {
@@ -22,36 +22,32 @@ const App: React.FC = () => {
   };
 
   const handleCropComplete = async (
-    pixelCrop: PixelCrop, 
-    rotation: number, 
-    keepTransparency: boolean,
+    croppedBase64: string,
     forcedSize: { width: number | ''; height: number | '' }
   ) => {
     try {
       if (!imageSrc) return;
 
-      // 1. Generate the base cropped image (Original)
-      const croppedBase64 = await getCroppedImg(imageSrc, pixelCrop, rotation, { horizontal: false, vertical: false }, keepTransparency);
-      
-      // Determine base dimensions
-      // If user provided a forced size (target width/height), we resize the crop result to that first
-      // If not, we use the crop dimensions
+      // 1. Process Original (Cropped)
+      // Determine actual dimensions of the crop result
+      const img = await createImage(croppedBase64);
+      let baseWidth = img.width;
+      let baseHeight = img.height;
       let baseImage = croppedBase64;
-      let baseWidth = pixelCrop.width;
-      let baseHeight = pixelCrop.height;
 
+      // If user provided a forced size (target width/height), resize base image
       const hasForcedWidth = forcedSize.width !== '';
       const hasForcedHeight = forcedSize.height !== '';
 
       if (hasForcedWidth || hasForcedHeight) {
          // Calculate aspect ratio of the crop
-         const aspectRatio = pixelCrop.width / pixelCrop.height;
+         const aspectRatio = baseWidth / baseHeight;
          
          let finalWidth = baseWidth;
          let finalHeight = baseHeight;
 
          if (hasForcedWidth && hasForcedHeight) {
-            // User forced both - potential stretch if they unlocked aspect, but that's what "arbitrary" means
+            // User forced both - strict resize
             finalWidth = Number(forcedSize.width);
             finalHeight = Number(forcedSize.height);
          } else if (hasForcedWidth) {
@@ -62,21 +58,23 @@ const App: React.FC = () => {
             finalWidth = finalHeight * aspectRatio;
          }
 
-         // Resize the base crop to this new "Original" target
-         baseImage = await resizeImage(croppedBase64, finalWidth, finalHeight, keepTransparency);
+         // We pass true for transparency here because the base crop already handled the background color logic
+         // We just want to preserve what the cropper gave us during resize
+         baseImage = await resizeImage(croppedBase64, finalWidth, finalHeight, true);
          baseWidth = finalWidth;
          baseHeight = finalHeight;
       }
 
       // 2. Generate Small (50%)
-      const smallWidth = Math.floor(baseWidth * 0.5);
-      const smallHeight = Math.floor(baseHeight * 0.5);
-      const smallImage = await resizeImage(baseImage, smallWidth, smallHeight, keepTransparency);
+      const smallWidth = Math.max(1, Math.floor(baseWidth * 0.5));
+      const smallHeight = Math.max(1, Math.floor(baseHeight * 0.5));
+      // Always keep transparency during resize, as the "Original" already has the correct background baked in if needed
+      const smallImage = await resizeImage(baseImage, smallWidth, smallHeight, true);
 
       // 3. Generate Large (200%)
       const largeWidth = Math.floor(baseWidth * 2);
       const largeHeight = Math.floor(baseHeight * 2);
-      const largeImage = await resizeImage(baseImage, largeWidth, largeHeight, keepTransparency);
+      const largeImage = await resizeImage(baseImage, largeWidth, largeHeight, true);
 
       setResults({
         original: baseImage,
